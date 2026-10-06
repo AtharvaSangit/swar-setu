@@ -44,6 +44,20 @@ interface RagaItem {
   description: string;
 }
 
+interface PracticeLog {
+  id: number;
+  raga: string;
+  durationMinutes: number;
+  notes: string;
+  date: string;
+}
+
+interface TaalBeat {
+  matra: number;
+  bol: string;
+  type: string;
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -81,7 +95,7 @@ interface RagaItem {
 
           <div class="flex items-center space-x-4">
             <span class="hidden sm:inline-block text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-900">
-              Prototype v1.0
+              Prototype v1.1
             </span>
           </div>
         </div>
@@ -132,6 +146,10 @@ interface RagaItem {
                     <span class="font-semibold text-stone-900">4</span>
                   </div>
                   <div class="flex justify-between">
+                    <span>Sadhana Logged</span>
+                    <span class="font-semibold text-amber-800">{{ practiceLogs().length }} Sessions</span>
+                  </div>
+                  <div class="flex justify-between">
                     <span>Community Rank</span>
                     <span class="font-semibold text-amber-800">Sadhaka</span>
                   </div>
@@ -143,7 +161,9 @@ interface RagaItem {
                 <p class="text-sm italic text-stone-200 leading-relaxed mb-4">
                   "Raga Yaman is performed during the first quarter of the night. It evokes Bhakti and Shanta rasa, known for its calming serenity."
                 </p>
-                <button class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-3 py-1.5 rounded-lg font-medium transition">
+                <button 
+                  (click)="activeTab.set('discover')"
+                  class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 px-3 py-1.5 rounded-lg font-medium transition">
                   Explore Yaman Details &rarr;
                 </button>
               </div>
@@ -230,6 +250,249 @@ interface RagaItem {
                 </div>
               }
 
+            </div>
+
+          </div>
+        }
+
+        <!-- SADHANA (PRACTICE ROOM & TANPURA) TAB -->
+        @if (activeTab() === 'sadhana') {
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-2xl font-bold text-stone-900">Sadhana Practice Room & Tanpura Drone</h2>
+              <p class="text-stone-600 text-sm">Simulate your daily riyaz drone, keep track of practice hours, and log your notes.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              <!-- Tanpura Simulator Widget -->
+              <div class="bg-gradient-to-br from-stone-900 to-amber-950 text-amber-50 rounded-2xl p-6 shadow-md flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-center mb-6">
+                    <span class="text-xs bg-amber-500/20 text-amber-200 px-3 py-1 rounded-full font-semibold">Virtual Shruti Box</span>
+                    <span class="w-3 h-3 rounded-full" [class.bg-emerald-500]="isTanpuraPlaying()" [class.bg-stone-500]="!isTanpuraPlaying()"></span>
+                  </div>
+
+                  <div class="text-center my-8">
+                    <div class="text-xs text-amber-300 uppercase tracking-widest font-semibold mb-1">Current Root Note (Paas)</div>
+                    <div class="text-5xl font-extrabold text-white tracking-wider mb-2">{{ selectedRootNote }}</div>
+                    <div class="text-xs text-stone-300">Combination: {{ selectedTanpuraStyle }}</div>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  <div class="flex justify-center space-x-2">
+                    <button 
+                      (click)="selectedRootNote = 'C (Sa)'"
+                      class="px-3 py-1 rounded text-xs font-medium" [class.bg-amber-700]="selectedRootNote === 'C (Sa)'" [class.bg-stone-800]="selectedRootNote !== 'C (Sa)'">C</button>
+                    <button 
+                      (click)="selectedRootNote = 'C# (Sa)'"
+                      class="px-3 py-1 rounded text-xs font-medium" [class.bg-amber-700]="selectedRootNote === 'C# (Sa)'" [class.bg-stone-800]="selectedRootNote !== 'C# (Sa)'">C#</button>
+                    <button 
+                      (click)="selectedRootNote = 'D (Sa)'"
+                      class="px-3 py-1 rounded text-xs font-medium" [class.bg-amber-700]="selectedRootNote === 'D (Sa)'" [class.bg-stone-800]="selectedRootNote !== 'D (Sa)'">D</button>
+                    <button 
+                      (click)="selectedRootNote = 'G# (Female Sa)'"
+                      class="px-3 py-1 rounded text-xs font-medium" [class.bg-amber-700]="selectedRootNote === 'G# (Female Sa)'" [class.bg-stone-800]="selectedRootNote !== 'G# (Female Sa)'">G# (F)</button>
+                  </div>
+
+                  <button 
+                    (click)="toggleTanpura()"
+                    class="w-full py-3 rounded-xl font-semibold text-sm transition shadow"
+                    [class.bg-emerald-700]="isTanpuraPlaying()"
+                    [class.hover:bg-emerald-800]="isTanpuraPlaying()"
+                    [class.bg-amber-600]="!isTanpuraPlaying()"
+                    [class.hover:bg-amber-700]="!isTanpuraPlaying()">
+                    <i class="fa-solid" [class.fa-stop]="isTanpuraPlaying()" [class.fa-play]="!isTanpuraPlaying()"></i>
+                    {{ isTanpuraPlaying() ? 'Stop Tanpura Drone' : 'Start Tanpura Riyaz' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Log Practice Session Form -->
+              <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-stone-200 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 class="font-bold text-stone-900 text-lg mb-4 flex items-center">
+                    <i class="fa-solid fa-pen-nib text-amber-800 mr-2"></i> Log Your Riyaz Session
+                  </h3>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label class="block text-xs font-semibold text-stone-600 mb-1">Raga Practiced</label>
+                      <input 
+                        type="text" 
+                        [formControl]="practiceRagaCtrl"
+                        placeholder="e.g., Raga Yaman / Alankars" 
+                        class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-700">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-stone-600 mb-1">Duration (Minutes)</label>
+                      <input 
+                        type="number" 
+                        [formControl]="practiceDurationCtrl"
+                        placeholder="45" 
+                        class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-700">
+                    </div>
+                  </div>
+
+                  <div class="mb-4">
+                    <label class="block text-xs font-semibold text-stone-600 mb-1">Practice Notes & Focus Areas</label>
+                    <textarea 
+                      [formControl]="practiceNotesCtrl"
+                      rows="2"
+                      placeholder="Focus on slow vilambit khayal taans, shuddha Madhyam stability..."
+                      class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-amber-700"></textarea>
+                  </div>
+                </div>
+
+                <div class="flex justify-end">
+                  <button 
+                    (click)="logPracticeSession()"
+                    class="bg-amber-800 hover:bg-amber-900 text-white text-xs font-semibold px-6 py-2.5 rounded-full transition">
+                    Save Practice Log
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- SWARA & TAAL PRACTICE STUDIO: Added feature, styled to match the original UI -->
+            <div class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm">
+              <div class="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-5">
+                <div>
+                  <h3 class="font-bold text-stone-900 text-lg flex items-center">
+                    <i class="fa-solid fa-music text-amber-800 mr-2"></i> Swara & Taal Practice Studio
+                  </h3>
+                  <p class="text-xs text-stone-500 mt-1">
+                    Practice individual swaras and keep a live tabla taal cycle alongside your tanpura drone.
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <label class="text-xs font-semibold text-stone-600">Taal</label>
+                  <select
+                    [(ngModel)]="selectedPracticeTaal"
+                    (change)="selectPracticeTaal()"
+                    class="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-700 focus:outline-none focus:border-amber-700">
+                    @for (taal of availableTaals; track taal) {
+                      <option [value]="taal">{{ taal }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <!-- Swara keyboard -->
+              <div class="mb-5">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-xs font-semibold uppercase tracking-wide text-stone-500">Swara Keypad</span>
+                  <span class="text-[11px] text-stone-400">Click a key to hear the note</span>
+                </div>
+
+                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-1.5">
+                  @for (swara of practiceSwaras; track swara.name) {
+                    <button
+                      type="button"
+                      (click)="playSwaraNote(swara.name)"
+                      class="h-16 rounded-xl border text-xs font-bold transition-all active:scale-95"
+                      [class.bg-amber-800]="activeSwara === swara.name"
+                      [class.text-white]="activeSwara === swara.name"
+                      [class.border-amber-800]="activeSwara === swara.name"
+                      [class.bg-stone-50]="activeSwara !== swara.name"
+                      [class.text-stone-800]="activeSwara !== swara.name"
+                      [class.border-stone-200]="activeSwara !== swara.name"
+                      [class.hover:bg-amber-50]="activeSwara !== swara.name">
+                      <span class="block text-base">{{ swara.name }}</span>
+                      <span class="block text-[9px] text-stone-400 mt-1" [class.text-amber-100]="activeSwara === swara.name">
+                        {{ swara.type }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Taal sequencer -->
+              <div class="border-t border-stone-100 pt-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                      {{ selectedPracticeTaal }} Rhythm
+                    </span>
+                    <span class="text-xs bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full font-semibold">
+                      {{ practiceBpm }} BPM
+                    </span>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <label class="text-xs text-stone-500">Tempo</label>
+                    <input
+                      type="range"
+                      min="40"
+                      max="180"
+                      step="1"
+                      [(ngModel)]="practiceBpm"
+                      (change)="restartTaalTempo()"
+                      class="w-32 accent-amber-700 cursor-pointer">
+                    <button
+                      type="button"
+                      (click)="toggleTaalPractice()"
+                      class="px-4 py-2 rounded-full text-xs font-semibold text-white transition"
+                      [class.bg-emerald-700]="isTaalPracticePlaying()"
+                      [class.hover:bg-emerald-800]="isTaalPracticePlaying()"
+                      [class.bg-amber-800]="!isTaalPracticePlaying()"
+                      [class.hover:bg-amber-900]="!isTaalPracticePlaying()">
+                      <i class="fa-solid mr-1.5" [class.fa-stop]="isTaalPracticePlaying()" [class.fa-play]="!isTaalPracticePlaying()"></i>
+                      {{ isTaalPracticePlaying() ? 'Stop Taal' : 'Start Taal' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex gap-2 overflow-x-auto pb-2">
+                  @for (beat of practiceTaalBeats; track beat.matra) {
+                    <button
+                      type="button"
+                      (click)="playTaalBeat(beat.matra - 1)"
+                      class="min-w-[64px] h-20 rounded-xl border flex flex-col items-center justify-between p-2 transition-all"
+                      [class.bg-amber-800]="activeTaalBeat === beat.matra - 1"
+                      [class.text-white]="activeTaalBeat === beat.matra - 1"
+                      [class.border-amber-800]="activeTaalBeat === beat.matra - 1"
+                      [class.bg-stone-50]="activeTaalBeat !== beat.matra - 1"
+                      [class.border-stone-200]="activeTaalBeat !== beat.matra - 1">
+                      <span class="text-[10px]" [class.text-amber-100]="activeTaalBeat === beat.matra - 1" [class.text-stone-400]="activeTaalBeat !== beat.matra - 1">
+                        {{ beat.matra }}
+                      </span>
+                      <span class="text-sm font-bold">{{ beat.bol }}</span>
+                      <span
+                        class="text-[9px] font-semibold px-1.5 py-0.5 rounded"
+                        [class.bg-white/20]="activeTaalBeat === beat.matra - 1"
+                        [class.bg-amber-100]="activeTaalBeat !== beat.matra - 1"
+                        [class.text-amber-100]="activeTaalBeat === beat.matra - 1"
+                        [class.text-amber-900]="activeTaalBeat !== beat.matra - 1">
+                        {{ beat.type }}
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Sadhana Logs -->
+            <div class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm">
+              <h3 class="font-bold text-stone-900 text-base mb-4">Your Recent Sadhana History</h3>
+              
+              <div class="space-y-3">
+                @for (log of practiceLogs(); track log.id) {
+                  <div class="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-stone-50 rounded-xl border border-stone-100 gap-2">
+                    <div>
+                      <div class="flex items-center space-x-2">
+                        <span class="font-bold text-stone-900 text-sm">{{ log.raga }}</span>
+                        <span class="text-xs bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full font-semibold">{{ log.durationMinutes }} mins</span>
+                      </div>
+                      <p class="text-xs text-stone-600 mt-1">{{ log.notes }}</p>
+                    </div>
+                    <span class="text-xs text-stone-400 font-medium">{{ log.date }}</span>
+                  </div>
+                }
+              </div>
             </div>
 
           </div>
@@ -378,10 +641,11 @@ interface RagaItem {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
-  activeTab = signal<'feed' | 'artists' | 'events' | 'discover'>('feed');
+  activeTab = signal<'feed' | 'sadhana' | 'artists' | 'events' | 'discover'>('feed');
 
   tabs = [
     { id: 'feed', label: 'Community Feed', icon: 'fa-solid fa-globe' },
+    { id: 'sadhana', label: 'Sadhana & Tanpura', icon: 'fa-solid fa-headphones-simple' },
     { id: 'artists', label: 'Gurus & Artists', icon: 'fa-solid fa-users' },
     { id: 'events', label: 'Events & Concerts', icon: 'fa-solid fa-calendar-days' },
     { id: 'discover', label: 'Discover Ragas', icon: 'fa-solid fa-compass' }
@@ -389,6 +653,108 @@ export class App {
 
   newPostContent = new FormControl('');
   artistSearch = new FormControl('');
+
+  // Sadhana & Practice Tracker Controls
+  practiceRagaCtrl = new FormControl('');
+  practiceDurationCtrl = new FormControl('');
+  practiceNotesCtrl = new FormControl('');
+  
+  isTanpuraPlaying = signal(false);
+  selectedRootNote = 'C (Sa)';
+  selectedTanpuraStyle = 'Traditional Pancham (Pa)';
+
+  // Swara & Taal Practice Studio
+  selectedPracticeTaal = 'Teental';
+  practiceBpm = 100;
+  activeSwara = '';
+  activeTaalBeat = -1;
+  isTaalPracticePlaying = signal(false);
+  private taalPracticeTimer: ReturnType<typeof setInterval> | null = null;
+  private practiceAudioContext: AudioContext | null = null;
+
+  availableTaals = ['Teental', 'Keherwa', 'Dadra', 'Rupak'];
+
+  practiceSwaras = [
+    { name: 'S', type: 'Shuddha' },
+    { name: 'r', type: 'Komal' },
+    { name: 'R', type: 'Shuddha' },
+    { name: 'g', type: 'Komal' },
+    { name: 'G', type: 'Shuddha' },
+    { name: 'M', type: 'Shuddha' },
+    { name: 'm', type: 'Teevra' },
+    { name: 'P', type: 'Shuddha' },
+    { name: 'd', type: 'Komal' },
+    { name: 'D', type: 'Shuddha' },
+    { name: 'n', type: 'Komal' },
+    { name: 'N', type: 'Shuddha' }
+  ];
+
+  taalStructures: Record<string, TaalBeat[]> = {
+    Teental: [
+      { matra: 1, bol: 'Dha', type: 'Sam (X)' },
+      { matra: 2, bol: 'Dhin', type: 'Tali 1' },
+      { matra: 3, bol: 'Dhin', type: 'Tali 1' },
+      { matra: 4, bol: 'Dha', type: 'Tali 1' },
+      { matra: 5, bol: 'Dha', type: 'Tali 2' },
+      { matra: 6, bol: 'Dhin', type: 'Tali 2' },
+      { matra: 7, bol: 'Dhin', type: 'Tali 2' },
+      { matra: 8, bol: 'Dha', type: 'Tali 2' },
+      { matra: 9, bol: 'Dha', type: 'Khali (0)' },
+      { matra: 10, bol: 'Tin', type: 'Khali' },
+      { matra: 11, bol: 'Tin', type: 'Khali' },
+      { matra: 12, bol: 'Ta', type: 'Khali' },
+      { matra: 13, bol: 'Ta', type: 'Tali 3' },
+      { matra: 14, bol: 'Dhin', type: 'Tali 3' },
+      { matra: 15, bol: 'Dhin', type: 'Tali 3' },
+      { matra: 16, bol: 'Dha', type: 'Tali 3' }
+    ],
+    Keherwa: [
+      { matra: 1, bol: 'Dha', type: 'Sam (X)' },
+      { matra: 2, bol: 'Ge', type: 'Tali' },
+      { matra: 3, bol: 'Na', type: 'Tali' },
+      { matra: 4, bol: 'Ti', type: 'Tali' },
+      { matra: 5, bol: 'Na', type: 'Khali (0)' },
+      { matra: 6, bol: 'Ka', type: 'Khali' },
+      { matra: 7, bol: 'Dhin', type: 'Khali' },
+      { matra: 8, bol: 'Na', type: 'Khali' }
+    ],
+    Dadra: [
+      { matra: 1, bol: 'Dha', type: 'Sam (X)' },
+      { matra: 2, bol: 'Dhi', type: 'Tali' },
+      { matra: 3, bol: 'Na', type: 'Tali' },
+      { matra: 4, bol: 'Dha', type: 'Khali (0)' },
+      { matra: 5, bol: 'Tu', type: 'Khali' },
+      { matra: 6, bol: 'Na', type: 'Khali' }
+    ],
+    Rupak: [
+      { matra: 1, bol: 'Tin', type: 'Khali (0)' },
+      { matra: 2, bol: 'Tin', type: 'Khali' },
+      { matra: 3, bol: 'Na', type: 'Khali' },
+      { matra: 4, bol: 'Dhin', type: 'Tali 2' },
+      { matra: 5, bol: 'Na', type: 'Tali 2' },
+      { matra: 6, bol: 'Dhin', type: 'Tali 3' },
+      { matra: 7, bol: 'Na', type: 'Tali 3' }
+    ]
+  };
+
+  practiceTaalBeats = this.taalStructures[this.selectedPracticeTaal];
+
+  practiceLogs = signal<PracticeLog[]>([
+    {
+      id: 1,
+      raga: 'Raga Yaman',
+      durationMinutes: 45,
+      notes: 'Worked on vilambit khayal steady laya and meend across Gandhaar.',
+      date: 'Yesterday, 6:00 PM'
+    },
+    {
+      id: 2,
+      raga: 'Alankars & Shrutis',
+      durationMinutes: 30,
+      notes: 'Palta practice in three speeds (Drut Laya).',
+      date: 'Oct 4, 2026'
+    }
+  ]);
 
   posts = signal<Post[]>([
     {
@@ -606,6 +972,160 @@ export class App {
 
     this.posts.update(posts => [newEntry, ...posts]);
     this.newPostContent.setValue('');
+  }
+
+  private getPracticeAudioContext(): AudioContext {
+    if (!this.practiceAudioContext) {
+      this.practiceAudioContext = new AudioContext();
+    }
+    if (this.practiceAudioContext.state === 'suspended') {
+      void this.practiceAudioContext.resume();
+    }
+    return this.practiceAudioContext;
+  }
+
+  private getSwaraFrequency(swara: string): number {
+    const baseFrequency = 261.63; // C / Sa reference
+    const semitones: Record<string, number> = {
+      S: 0, r: 1, R: 2, g: 3, G: 4, M: 5,
+      m: 6, P: 7, d: 8, D: 9, n: 10, N: 11
+    };
+    return baseFrequency * Math.pow(2, (semitones[swara] ?? 0) / 12);
+  }
+
+  playSwaraNote(swara: string) {
+    this.activeSwara = swara;
+
+    const ctx = this.getPracticeAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(this.getSwaraFrequency(swara), now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.75);
+
+    window.setTimeout(() => {
+      if (this.activeSwara === swara) this.activeSwara = '';
+    }, 750);
+  }
+
+  selectPracticeTaal() {
+    this.stopTaalPractice();
+    this.practiceTaalBeats = this.taalStructures[this.selectedPracticeTaal] || this.taalStructures['Teental'];
+  }
+
+  toggleTaalPractice() {
+    if (this.isTaalPracticePlaying()) {
+      this.stopTaalPractice();
+      return;
+    }
+
+    this.isTaalPracticePlaying.set(true);
+    this.activeTaalBeat = 0;
+    this.playTaalBeat(0);
+    this.startTaalTimer();
+  }
+
+  private startTaalTimer() {
+    if (this.taalPracticeTimer) clearInterval(this.taalPracticeTimer);
+
+    const interval = (60 / Number(this.practiceBpm)) * 1000;
+    this.taalPracticeTimer = setInterval(() => {
+      if (!this.isTaalPracticePlaying()) return;
+
+      const nextBeat = (this.activeTaalBeat + 1) % this.practiceTaalBeats.length;
+      this.playTaalBeat(nextBeat);
+    }, interval);
+  }
+
+  private stopTaalPractice() {
+    if (this.taalPracticeTimer) {
+      clearInterval(this.taalPracticeTimer);
+      this.taalPracticeTimer = null;
+    }
+    this.isTaalPracticePlaying.set(false);
+    this.activeTaalBeat = -1;
+  }
+
+  playTaalBeat(index: number) {
+    const beat = this.practiceTaalBeats[index];
+    if (!beat) return;
+
+    this.activeTaalBeat = index;
+    this.playTablaBol(beat.bol);
+  }
+
+  private playTablaBol(bol: string) {
+    const ctx = this.getPracticeAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+
+    if (['Dha', 'Dhin', 'Dhi'].includes(bol)) {
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(105, now);
+      oscillator.frequency.exponentialRampToValueAtTime(48, now + 0.25);
+      gain.gain.setValueAtTime(0.34, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+    } else if (['Tin', 'Ti', 'Ta'].includes(bol)) {
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(360, now);
+      oscillator.frequency.exponentialRampToValueAtTime(210, now + 0.12);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    } else {
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(180, now);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    }
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.35);
+  }
+
+  restartTaalTempo() {
+    if (this.isTaalPracticePlaying()) this.startTaalTimer();
+  }
+
+  toggleTanpura() {
+    this.isTanpuraPlaying.update(val => !val);
+  }
+
+  logPracticeSession() {
+    const raga = this.practiceRagaCtrl.value?.trim();
+    const duration = Number(this.practiceDurationCtrl.value);
+    const notes = this.practiceNotesCtrl.value?.trim() || 'Regular riyaz session.';
+
+    if (!raga || !duration || isNaN(duration)) {
+      window.alert('Please enter a valid Raga name and practice duration in minutes.');
+      return;
+    }
+
+    const newLog: PracticeLog = {
+      id: Date.now(),
+      raga,
+      durationMinutes: duration,
+      notes,
+      date: 'Just now'
+    };
+
+    this.practiceLogs.update(logs => [newLog, ...logs]);
+    this.practiceRagaCtrl.setValue('');
+    this.practiceDurationCtrl.setValue('');
+    this.practiceNotesCtrl.setValue('');
+    window.alert('Practice session logged successfully to your profile!');
   }
 
   connectArtist(name: string) {
